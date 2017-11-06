@@ -6,11 +6,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.jakewharton.rxbinding.view.RxView;
 import com.mason.kakao.reactivex.KrewClickListener;
 import com.mason.kakao.reactivex.R;
 import com.mason.kakao.reactivex.model.Krew;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by kakao on 2017. 10. 25..
@@ -31,15 +34,12 @@ public class KrewListAdapter extends RecyclerView.Adapter<KrewViewHolder> {
     @Override
     public KrewViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         final KrewViewHolder holder = new KrewViewHolder(LayoutInflater.from(context).inflate(R.layout.viewholder_krew, parent, false));
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int position = holder.getAdapterPosition();
-                if(position != -1 && krewClickListener != null) {
-                    krewClickListener.onKrewClick(krews.get(position));
-                }
-            }
-        });
+
+        RxView.clicks(holder.itemView)
+                .throttleFirst(500, TimeUnit.MILLISECONDS)
+                .map(e -> krews.get(holder.getAdapterPosition()))
+                .delay(200, TimeUnit.MILLISECONDS)
+                .subscribe(krewClickListener::onKrewClick);
         return holder;
     }
 

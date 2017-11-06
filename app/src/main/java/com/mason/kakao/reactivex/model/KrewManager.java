@@ -8,8 +8,11 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
+import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -45,35 +48,27 @@ public class KrewManager {
     }
 
     public Observable<List<Krew>> getKrews() {
-        return Observable.create(new ObservableOnSubscribe<List<Krew>>() {
-            @Override
-            public void subscribe(@NonNull ObservableEmitter<List<Krew>> e) throws Exception {
-                e.onNext(new ArrayList<>(krews));
-            }})
+        return Observable.just(krews)
                 .delay(1000, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
     public Observable<List<Krew>> findKrews(final String name) {
-        return Observable.create(new ObservableOnSubscribe<List<Krew>>() {
-            @Override
-            public void subscribe(@NonNull ObservableEmitter<List<Krew>> e) throws Exception {
-                List<Krew> list = new ArrayList<>();
-                for(Krew krew : krews) {
-                    if(krew.getName().contains(name)) {
-                        list.add(krew);
-                    }
-                }
-                e.onNext(list);
-            }})
+        return Observable.just(krews)
+                .flatMap(Observable::fromIterable)
+                .filter(krew -> krew.getName().startsWith(name))
+                .toList()
+                .toObservable()
                 .delay(500, TimeUnit.MILLISECONDS)
-                .subscribeOn(Schedulers.computation())
+                .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
     public void removeKrew(Krew krew) {
         int index = krews.indexOf(krew);
-        krews.remove(index);
+        if(index > -1) {
+            krews.remove(index);
+        }
     }
 }
